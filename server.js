@@ -3,12 +3,8 @@ const {middleware:decider} = require('./index')
 
 app.use(decider({
   cotizador: {
-    weight: 40,
-    url: "https://www.google.com/"
-  },
-  iuni: {
-    weight: 20,
-    url: "https://iunigo.com.ar/"
+    weight: 90,
+    url: "http://iunigo.com.ar"
   }
 },{
   defaultVariantName:"default"

@@ -1,8 +1,6 @@
 const proxy = require("express-http-proxy");
-const { reduce, find } = require("lodash");
+const { reduce, find, assign, each } = require("lodash");
 var cookieParser = require("cookie-parser");
-
-const aWeekInMilli = 1000 * 3600 * 24 * 7;
 
 const decider = (exps, choosen) => {
   const sumOfWeights = reduce(exps, (p, c) => p.weight + c.weight);
@@ -11,36 +9,54 @@ const decider = (exps, choosen) => {
   // si tiene una variante elegida previamente
   if (choosen) {
     // si no existe por algún motivo se sortea de nuevo
-    return exps[choosen] || decider(exps);
+    return exps[choosen]
+      ? assign({}, exps[choosen], { name: choosen })
+      : decider(exps);
   } else {
     const num = Math.floor(Math.random() * 100);
+    each(exps, (x, k) => (x.name = k));
     let counter = 0;
     const found = find(exps, (x, name) => {
       counter = counter + x.weight;
-      return counter > num ? Object.assign(x, { name }) : false;
+      return counter > num ? true : false;
     });
     return found;
   }
 };
 
-exports.middleware = (exps, opts = {}) => (req, res, next) => {
-  const { defaultVariantName = "original", maxAge = aWeekInMilli } = opts;
-  cookieParser()(req, res, () => {
-    const { iuniexp: currentExp } = req.cookies;
-    const x = decider(exps, currentExp);
+exports.middleware = (exps, opts = {}) => [
+  cookieParser(),
+  (req, res, next) => {
+    const {
+      defaultVariantName = "original",
+      maxAge = 1000 * 3600 * 24 * 7,
+      cookieName = "variant"
+    } = opts;
 
-    if (currentExp == defaultVariantName || !x) {
-      res.cookie("iuniexp", defaultVariantName, {
-        maxAge
-      });
-      next();
-    } else if(x) {
-      res.cookie("iuniexp", x.name, {
-        maxAge
-      });
-      proxy(x.url)(req, res, next);
-    }else{
-      next()
+    if (req.headers["ab-decider-child"]) {
+      return next();
     }
-  });
-};
+
+    const thisReqVariant = req.cookies[cookieName];
+
+    if (thisReqVariant == defaultVariantName) {
+      next();
+    } else {
+      const x = decider(exps, thisReqVariant);
+
+      if (x) {
+        res.cookie(cookieName, x.name, { maxAge });
+        proxy(x.url, {
+          proxyReqOptDecorator: function(proxyReqOpts) {
+            proxyReqOpts.headers[cookieName] = x.name;
+            proxyReqOpts.headers["ab-decider-child"] = "true";
+            return proxyReqOpts;
+          }
+        })(req, res, next);
+      } else {
+        res.cookie(cookieName, defaultVariantName, { maxAge });
+        next();
+      }
+    }
+  }
+];
