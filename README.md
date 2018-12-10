@@ -19,9 +19,10 @@ const experiments = {
     url: "https://exp-b.example.com/"
   }
 }
-const x = decider(, choosen)
-
+const x = decider(experiments, choosen)
 console.log(x)
+// possible "x" value: {weight: 10, name:"variantA", url: "https://exp-a.example.com/"}
+// or undefined
 ```
 
 **NOTE:** If `choosen` is present the experiments object 
@@ -35,7 +36,7 @@ the process.
 var app = require('express')();
 const {middleware} = require('node-ab-decider')
 
-app.use(middleware({
+const experiments = {
   variantA: {
     weight: 10,
     url: "https://exp-a.example.com/"
@@ -44,7 +45,9 @@ app.use(middleware({
     weight: 20,
     url: "https://exp-b.example.com/"
   }
-},{
+}
+
+app.use(middleware(experiments, {
   defaultVariantName:"default"
 }), (req,res)=>res.send('original'))
 
