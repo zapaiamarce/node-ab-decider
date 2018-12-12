@@ -48,10 +48,25 @@ const experiments = {
 }
 
 app.use(middleware(experiments, {
-  defaultVariantName:"default"
+  defaultVariantName:"default",
+  // ...opts
 }), (req,res)=>res.send('original'))
 
 app.listen(2323,()=>console.log('running on 2323'))
 ```
 
 Same logic but, it uses cookies to get the choosen or set the cookie.
+
+# Middleware options
+
+### defaultVariantName
+Name of the variant when none of the exps where choosen.
+
+### maxAge
+Expiration (in milliseconds) of the cookie
+
+### cookieName
+Name of the cookie used to save the choosen exp
+
+### skip
+Skip this middleware. Useful in dev mode.

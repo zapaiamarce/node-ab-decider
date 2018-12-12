@@ -30,10 +30,11 @@ exports.middleware = (exps, opts = {}) => [
     const {
       defaultVariantName = "original",
       maxAge = 1000 * 3600 * 24 * 7,
-      cookieName = "variant"
+      cookieName = "variant",
+      skip
     } = opts;
 
-    if (req.headers["ab-decider-child"]) {
+    if (req.headers["ab-decider-child"] || skip) {
       return next();
     }
 

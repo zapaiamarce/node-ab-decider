@@ -1,4 +1,4 @@
-var app = require('express')();
+const app = require('express')();
 const {middleware:decider} = require('./index')
 
 app.use(decider({
@@ -7,7 +7,8 @@ app.use(decider({
     url: "http://iunigo.com.ar"
   }
 },{
-  defaultVariantName:"default"
+  defaultVariantName:"default",
+  skip:true 
 }), (req,res)=>res.send('original'))
 
 app.listen(2323,()=>console.log('running on 2323'))
