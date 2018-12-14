@@ -1,19 +1,21 @@
 const proxy = require("express-http-proxy");
 const { reduce, find, assign, each } = require("lodash");
 const cookieParser = require("cookie-parser");
+const atob = require("atob");
+const btoa = require("btoa");
 
-const DEFAULT_COOKIE_NAME = "variant" 
+const DEFAULT_COOKIE_NAME = "variant";
 
-const decider = (exps, choosen) => {
+const decider = (exps, choosen, forceReturn) => {
   const sumOfWeights = reduce(exps, (p, c) => p.weight + c.weight);
   if (sumOfWeights > 100) throw "Sum of weights has to be less than 100";
 
   // si tiene una variante elegida previamente
   if (choosen) {
-    // si no existe por algún motivo se sortea de nuevo
+    // si no existe por algún motivo se sortea de nuevo sin el choosen
     return exps[choosen]
       ? assign({}, exps[choosen], { name: choosen })
-      : decider(exps);
+      : decider(exps, false, forceReturn);
   } else {
     const num = Math.floor(Math.random() * 100);
     each(exps, (x, k) => (x.name = k));
@@ -22,28 +24,29 @@ const decider = (exps, choosen) => {
       counter = counter + x.weight;
       return counter > num ? true : false;
     });
-    return found;
+
+    return !found && forceReturn ? decider(exps, choosen, forceReturn) : found;
   }
 };
 
 const resolveProxyOptions = (selectedExperiment, middlewareOptions) => {
   const {
     cookieName = DEFAULT_COOKIE_NAME,
-    sendCookieToChild = true
+    sendHeaderToChild = true
   } = middlewareOptions;
 
-  const options = {}
+  const options = {};
 
-  if(sendCookieToChild){
+  if (sendHeaderToChild) {
     options["proxyReqOptDecorator"] = function(proxyReqOpts) {
       proxyReqOpts.headers[cookieName] = selectedExperiment.name;
       proxyReqOpts.headers["ab-decider-child"] = "true";
       return proxyReqOpts;
-    }
+    };
   }
 
-  return options
-}
+  return options;
+};
 
 exports.middleware = (exps, opts = {}) => [
   cookieParser(),
@@ -52,27 +55,37 @@ exports.middleware = (exps, opts = {}) => [
       defaultVariantName = "original",
       maxAge = 1000 * 3600 * 24 * 7,
       cookieName = DEFAULT_COOKIE_NAME,
-      skip = false
+      skip = false,
+      avoidDefault = false,
+      encodeCookie = false
     } = opts;
-    
+
     if (req.headers["ab-decider-child"] || skip) {
       return next();
     }
 
-    const thisReqVariant = req.cookies[cookieName];
+    const thisReqVariantRaw = req.cookies[cookieName];
+    const thisReqVariant = encodeCookie ? atob(thisReqVariantRaw) : thisReqVariantRaw;
+    
     const experiences = typeof exps == "function" ? exps() : exps;
-    console.log(experiences);
-    if (thisReqVariant == defaultVariantName) {
+
+    // avoid default fuerza a que un experimento sea elegido,
+    // nunca se ejecuta el next
+    if (!avoidDefault && thisReqVariant == defaultVariantName) {
       next();
     } else {
-      const x = decider(experiences, thisReqVariant);
-      const proxyOptions = resolveProxyOptions(x, opts)
+      const x = decider(experiences, thisReqVariant, avoidDefault);
+      const proxyOptions = resolveProxyOptions(x, opts);
+
+      const cookieValueRaw = x ? x.name : defaultVariantName;
+      const cookieValue = encodeCookie
+        ? btoa(cookieValueRaw)
+        : cookieValueRaw;
+      res.cookie(cookieName, cookieValue, { maxAge });
 
       if (x) {
-        res.cookie(cookieName, x.name, { maxAge });
         proxy(x.url, proxyOptions)(req, res, next);
       } else {
-        res.cookie(cookieName, defaultVariantName, { maxAge });
         next();
       }
     }
