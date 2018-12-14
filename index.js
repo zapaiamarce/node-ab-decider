@@ -8,7 +8,7 @@ const DEFAULT_COOKIE_NAME = "variant";
 
 const decider = (exps, choosen, forceReturn) => {
   const sumOfWeights = reduce(exps, (p, c) => p.weight + c.weight);
-  if (sumOfWeights > 100) throw "Sum of weights has to be less than 100";
+  if (sumOfWeights > 100) console.error("Sum of weights has to be less than 100");
 
   // si tiene una variante elegida previamente
   if (choosen) {
