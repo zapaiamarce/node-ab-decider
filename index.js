@@ -65,7 +65,7 @@ exports.middleware = (exps, opts = {}) => [
     }
 
     const thisReqVariantRaw = req.cookies[cookieName];
-    const thisReqVariant = encodeCookie ? atob(thisReqVariantRaw) : thisReqVariantRaw;
+    const thisReqVariant = (encodeCookie && thisReqVariantRaw) ? atob(thisReqVariantRaw) : thisReqVariantRaw;
     
     const experiences = typeof exps == "function" ? exps() : exps;
 
@@ -78,6 +78,7 @@ exports.middleware = (exps, opts = {}) => [
       const proxyOptions = resolveProxyOptions(x, opts);
 
       const cookieValueRaw = x ? x.name : defaultVariantName;
+      
       const cookieValue = encodeCookie
         ? btoa(cookieValueRaw)
         : cookieValueRaw;
