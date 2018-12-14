@@ -1,14 +1,19 @@
-const app = require('express')();
-const {middleware:decider} = require('./index')
+const app = require("express")();
+const { middleware: decider } = require("./index");
+const port = process.env.PORT || 2323;
 
-app.use(decider({
-  cotizador: {
-    weight: 90,
-    url: "http://iunigo.com.ar"
-  }
-},{
-  defaultVariantName:"default",
-  skip:true 
-}), (req,res)=>res.send('original'))
+const resource = () => {
+  return {
+    cotizador: {
+      weight: 50,
+      url: "http://localhost:3434"
+    }
+  };
+};
 
-app.listen(2323,()=>console.log('running on 2323'))
+app.use(
+  decider(resource, {}),
+  (req, res) => res.send(`port ${port}`)
+);
+
+app.listen(port, () => console.log(`running on ${port}`));

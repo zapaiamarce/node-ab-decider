@@ -1,6 +1,8 @@
 const proxy = require("express-http-proxy");
 const { reduce, find, assign, each } = require("lodash");
-var cookieParser = require("cookie-parser");
+const cookieParser = require("cookie-parser");
+
+const DEFAULT_COOKIE_NAME = "variant" 
 
 const decider = (exps, choosen) => {
   const sumOfWeights = reduce(exps, (p, c) => p.weight + c.weight);
@@ -24,36 +26,51 @@ const decider = (exps, choosen) => {
   }
 };
 
+const resolveProxyOptions = (selectedExperiment, middlewareOptions) => {
+  const {
+    cookieName = DEFAULT_COOKIE_NAME,
+    sendCookieToChild = true
+  } = middlewareOptions;
+
+  const options = {}
+
+  if(sendCookieToChild){
+    options["proxyReqOptDecorator"] = function(proxyReqOpts) {
+      proxyReqOpts.headers[cookieName] = selectedExperiment.name;
+      proxyReqOpts.headers["ab-decider-child"] = "true";
+      return proxyReqOpts;
+    }
+  }
+
+  return options
+}
+
 exports.middleware = (exps, opts = {}) => [
   cookieParser(),
   (req, res, next) => {
     const {
       defaultVariantName = "original",
       maxAge = 1000 * 3600 * 24 * 7,
-      cookieName = "variant",
-      skip
+      cookieName = DEFAULT_COOKIE_NAME,
+      skip = false
     } = opts;
-
+    
     if (req.headers["ab-decider-child"] || skip) {
       return next();
     }
 
     const thisReqVariant = req.cookies[cookieName];
-
+    const experiences = typeof exps == "function" ? exps() : exps;
+    console.log(experiences);
     if (thisReqVariant == defaultVariantName) {
       next();
     } else {
-      const x = decider(exps, thisReqVariant);
+      const x = decider(experiences, thisReqVariant);
+      const proxyOptions = resolveProxyOptions(x, opts)
 
       if (x) {
         res.cookie(cookieName, x.name, { maxAge });
-        proxy(x.url, {
-          proxyReqOptDecorator: function(proxyReqOpts) {
-            proxyReqOpts.headers[cookieName] = x.name;
-            proxyReqOpts.headers["ab-decider-child"] = "true";
-            return proxyReqOpts;
-          }
-        })(req, res, next);
+        proxy(x.url, proxyOptions)(req, res, next);
       } else {
         res.cookie(cookieName, defaultVariantName, { maxAge });
         next();
