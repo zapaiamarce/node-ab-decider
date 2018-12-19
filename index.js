@@ -7,7 +7,7 @@ const btoa = require("btoa");
 const DEFAULT_COOKIE_NAME = "variant";
 
 const decider = (exps, choosen, forceReturn) => {
-  const sumOfWeights = reduce(exps, (p, c) => p.weight + c.weight);
+  const sumOfWeights = reduce(exps, (p, c) => p + c.weight, 0);
   if (sumOfWeights > 100) process.emitWarning("Sum of weights has to be less than 100");
   if(!sumOfWeights) return process.emitWarning("Sum of weights is invalid");
 
@@ -49,7 +49,8 @@ const resolveProxyOptions = (selectedExperiment, middlewareOptions) => {
   return options;
 };
 
-exports.middleware = (exps, opts = {}) => [
+module.exports = decider;
+module.exports.middleware = (exps, opts = {}) => [
   cookieParser(),
   (req, res, next) => {
     const {
