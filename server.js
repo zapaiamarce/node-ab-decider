@@ -18,10 +18,7 @@ const resource = () => {
 app.get("/test", (req, res)=>res.send("ok"))
 
 app.use(
-  decider(resource, {
-    avoidDefault: true,
-    encodeCookie: true
-  })
+  decider(resource)
 );
 
 app.listen(port, () => console.log(`running on ${port}`));
