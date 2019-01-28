@@ -10,7 +10,9 @@ const decider = (exps, choosen, forceReturn) => {
   if (sumOfWeights > 100)
     process.emitWarning("Sum of weights has to be less than 100");
   if (sumOfWeights < 100)
-    process.emitWarning(`Sum of weights is less than 100 (${sumOfWeights}). We recomend use 100 as total.`);
+    process.emitWarning(
+      `Sum of weights is less than 100 (${sumOfWeights}). We recomend use 100 as total.`
+    );
   if (!sumOfWeights) return process.emitWarning("Sum of weights is invalid");
 
   // si tiene una variante elegida previamente
@@ -33,12 +35,11 @@ const decider = (exps, choosen, forceReturn) => {
 };
 
 const resolveProxyOptions = (selectedExperiment, middlewareOptions) => {
-  const {
-    cookieName = DEFAULT_COOKIE_NAME,
-    sendHeaderToChild = true
-  } = middlewareOptions;
+  const { sendHeaderToChild = true, https = false } = middlewareOptions;
 
-  const options = {};
+  const options = {
+    https
+  };
 
   if (sendHeaderToChild) {
     options["proxyReqOptDecorator"] = function(proxyReqOpts) {
@@ -67,13 +68,13 @@ module.exports.middleware = (exps, opts = {}) => [
     const experiences = typeof exps == "function" ? exps() : exps;
 
     const experimentCookie = req.cookies[cookieName];
-    const cookieValue = experimentCookie && experimentCookie.split("-")[0]
-    const cookieHash = experimentCookie && experimentCookie.split("-")[1]
-    const existingExperience = hash == cookieHash && experiences[cookieValue]
+    const cookieValue = experimentCookie && experimentCookie.split("-")[0];
+    const cookieHash = experimentCookie && experimentCookie.split("-")[1];
+    const existingExperience = hash == cookieHash && experiences[cookieValue];
     const x = existingExperience || decider(experiences, cookieValue, true);
     const proxyOptions = resolveProxyOptions(x, opts);
-    
-    if(!existingExperience){
+
+    if (!existingExperience) {
       res.cookie(cookieName, `${x.name}-${hash}`, { maxAge });
     }
 
