@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 
 const DEFAULT_COOKIE_NAME = "variant";
 const hash = random(10000, 99999);
+const HASH_SPLITTER = "@"
 
 const decider = (exps, choosen, forceReturn) => {
   const sumOfWeights = reduce(exps, (p, c) => p + c.weight, 0);
@@ -68,14 +69,14 @@ module.exports.middleware = (exps, opts = {}) => [
     const experiences = typeof exps == "function" ? exps() : exps;
 
     const experimentCookie = req.cookies[cookieName];
-    const cookieValue = experimentCookie && experimentCookie.split("-")[0];
-    const cookieHash = experimentCookie && experimentCookie.split("-")[1];
+    const cookieValue = experimentCookie && experimentCookie.split(HASH_SPLITTER)[0];
+    const cookieHash = experimentCookie && experimentCookie.split(HASH_SPLITTER)[1];
     const existingExperience = hash == cookieHash && experiences[cookieValue];
     const x = existingExperience || decider(experiences, cookieValue, true);
     const proxyOptions = resolveProxyOptions(x, opts);
 
     if (!existingExperience) {
-      res.cookie(cookieName, `${x.name}-${hash}`, { maxAge });
+      res.cookie(cookieName, `${x.name}${HASH_SPLITTER}${hash}`, { maxAge });
     }
 
     proxy(x.url, proxyOptions)(req, res, next);
