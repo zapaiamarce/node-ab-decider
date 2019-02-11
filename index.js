@@ -3,7 +3,6 @@ const { reduce, find, assign, each, random } = require("lodash");
 const cookieParser = require("cookie-parser");
 
 const DEFAULT_COOKIE_NAME = "variant";
-const hash = random(10000, 99999);
 const HASH_SPLITTER = "@"
 
 const decider = (exps, choosen, forceReturn) => {
@@ -59,7 +58,8 @@ module.exports.middleware = (exps, opts = {}) => [
     const {
       maxAge = 1000 * 3600 * 24 * 2,
       cookieName = DEFAULT_COOKIE_NAME,
-      skip = false
+      skip = false,
+      hash = "nohash" 
     } = opts;
 
     if (req.headers["ab-decider-child"] || skip) {

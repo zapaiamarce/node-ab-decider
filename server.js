@@ -18,7 +18,7 @@ const resource = () => {
 app.get("/test", (req, res)=>res.send("ok"))
 
 app.use(
-  decider(resource)
+  decider(resource, {hash:123})
 );
 
 app.listen(port, () => console.log(`running on ${port}`));
