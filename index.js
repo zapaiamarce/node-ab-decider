@@ -35,20 +35,33 @@ const decider = (exps, choosen, forceReturn) => {
 };
 
 const resolveProxyOptions = (selectedExperiment, middlewareOptions) => {
-  const { sendHeaderToChild = true, https = false } = middlewareOptions;
+  const {
+    sendHeaderToChild = true,
+    https = false,
+    headers = null
+  } = middlewareOptions;
 
-  const options = {
+  const proxyOptions = {
     https
   };
 
   if (sendHeaderToChild) {
-    options["proxyReqOptDecorator"] = function(proxyReqOpts) {
+    proxyOptions["proxyReqOptDecorator"] = function (proxyReqOpts) {
       proxyReqOpts.headers["ab-decider-child"] = "true";
       return proxyReqOpts;
     };
   }
+  
+  if (headers) {
+    proxyOptions["userResHeaderDecorator"] = function (originHeaders) {
+      return {
+        ...originHeaders,
+        ...headers
+      }
+    };
+  }
 
-  return options;
+  return proxyOptions;
 };
 
 module.exports = decider;
@@ -59,7 +72,7 @@ module.exports.middleware = (exps, opts = {}) => [
       maxAge = 1000 * 3600 * 24 * 2,
       cookieName = DEFAULT_COOKIE_NAME,
       skip = false,
-      hash = "nohash" 
+      hash = "nohash"
     } = opts;
 
     if (req.headers["ab-decider-child"] || skip) {

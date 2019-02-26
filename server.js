@@ -1,6 +1,7 @@
 const app = require("express")();
 const { middleware: decider } = require("./index");
-const port = process.env.PORT || 2323;
+const port = process.env.PORT || 2323;
+const nocache = require('nocache')
 
 const resource = () => {
   return {
@@ -15,10 +16,12 @@ const resource = () => {
   };
 };
 
-app.get("/test", (req, res)=>res.send("ok"))
+app.get("/test", (req, res) => res.send("ok"))
 
 app.use(
-  decider(resource, {hash:123})
+  decider(resource, {
+    hash: 123
+  })
 );
 
 app.listen(port, () => console.log(`running on ${port}`));

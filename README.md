@@ -71,12 +71,11 @@ Name of the cookie used to save the choosen exp
 ### skip
 Skip this middleware. Useful in dev mode.
 
-### avoidDefault
-if true it force to choose an option between the experiments,
-event if they doesn´t sum 100
-
-### encodeCookie
-Use btoa to encode the cookie value
-
 ### sendHeaderToChild
 If false it avoids to send "ab-decider-child" header to the proxied endpoint
+
+### https
+Force https to children
+
+### headers
+Headers to include in every response
