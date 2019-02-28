@@ -6,12 +6,12 @@ const nocache = require('nocache')
 const resource = () => {
   return {
     cotizador: {
-      weight: 10,
-      url: "https://www.google.com/"
+      weight: 5,
+      url: "http://mainstream.iunigo.com.ar"
     },
     alalla: {
-      weight: 10,
-      url: "https://www.google.com/"
+      weight: 80,
+      url: "http://mainstream.iunigo.com.ar"
     }
   };
 };
@@ -20,7 +20,8 @@ app.get("/test", (req, res) => res.send("ok"))
 
 app.use(
   decider(resource, {
-    hash: 123
+    hash: 123,
+    https: true,
   })
 );
 

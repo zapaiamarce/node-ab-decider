@@ -80,14 +80,18 @@ module.exports.middleware = (exps, opts = {}) => [
     }
 
     const experiences = typeof exps == "function" ? exps() : exps;
-
+    const forcedExperimentName = req.query.variant;
+    
     const experimentCookie = req.cookies[cookieName];
     const cookieValue = experimentCookie && experimentCookie.split(HASH_SPLITTER)[0];
     const cookieHash = experimentCookie && experimentCookie.split(HASH_SPLITTER)[1];
-    const existingExperience = hash == cookieHash && experiences[cookieValue];
-    const x = existingExperience || decider(experiences, cookieValue, true);
-    const proxyOptions = resolveProxyOptions(x, opts);
-
+    const resolvedExperienceName = forcedExperimentName || cookieValue;
+    const validHash = hash == cookieHash;
+    const existingExperience = !forcedExperimentName && validHash && experiences[cookieValue];
+    
+    const x = existingExperience || decider(experiences, resolvedExperienceName, true);
+    const proxyOptions = resolveProxyOptions(x, opts); 
+    
     if (!existingExperience) {
       res.cookie(cookieName, `${x.name}${HASH_SPLITTER}${hash}`, { maxAge });
     }
