@@ -6,6 +6,7 @@
   "author": "",
   "license": "ISC",
   "scripts": {
+    "patch": "npm version patch && git push",
     "test": "ava",
     "test:dev": "ava --watch --verbose"
   },

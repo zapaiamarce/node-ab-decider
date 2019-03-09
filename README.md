@@ -48,7 +48,6 @@ const experiments = {
 }
 
 app.use(middleware(experiments, {
-  defaultVariantName:"default",
   // ...opts
 }), (req,res)=>res.send('original'))
 
@@ -59,9 +58,6 @@ Same logic but, it uses cookies to get the choosen or set the cookie.
 
 # Middleware options
 
-### defaultVariantName
-Name of the variant when none of the exps where choosen.
-
 ### maxAge
 Expiration (in milliseconds) of the cookie
 
@@ -70,6 +66,9 @@ Name of the cookie used to save the choosen exp
 
 ### skip
 Skip this middleware. Useful in dev mode.
+
+### hash
+Hash added to the cookie. It is something like a version.
 
 ### sendHeaderToChild
 If false it avoids to send "ab-decider-child" header to the proxied endpoint
