@@ -1,22 +1,28 @@
 const app = require("express")();
 const { middleware: decider } = require("./index");
 const port = process.env.PORT || 2323;
-const nocache = require('nocache')
 
-const resource = () => {
-  return {
-    cotizador: {
-      weight: 5,
-      url: "http://mainstream.iunigo.com.ar"
-    },
-    alalla: {
-      weight: 80,
-      url: "http://mainstream.iunigo.com.ar"
-    }
-  };
-};
+const LOCALHOST = 'http://localhost:2323'
+
+const resource = () => ({
+  a: {
+    url: LOCALHOST + "/a",
+    weight: 70
+  },
+  b: {
+    url: LOCALHOST + "/b",
+    weight: 20
+  },
+  c: {
+    url: LOCALHOST + "/c",
+    weight: 10
+  }
+});
 
 app.get("/test", (req, res) => res.send("ok"))
+app.get("/a", (req, res) => res.send("a"))
+app.get("/b", (req, res) => res.send("b"))
+app.get("/c", (req, res) => res.send("c"))
 
 app.use(
   decider(resource, {
@@ -26,3 +32,8 @@ app.use(
 );
 
 app.listen(port, () => console.log(`running on ${port}`));
+
+app.resource = resource;
+app.hostname = LOCALHOST;
+
+module.exports = app;
