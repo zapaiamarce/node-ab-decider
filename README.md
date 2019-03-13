@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/zapaiamarce/node-ab-decider.svg?style=svg)](https://circleci.com/gh/zapaiamarce/node-ab-decider)
+
 ## Setup
 
 ```sh
@@ -20,9 +22,7 @@ const experiments = {
   }
 }
 const x = decider(experiments, choosen)
-console.log(x)
 // possible "x" value: {weight: 10, name:"variantA", url: "https://exp-a.example.com/"}
-// or undefined
 ```
 
 **NOTE:** If `choosen` is present the experiments object 
