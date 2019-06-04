@@ -25,7 +25,7 @@ const createDecider = (exps) => {
   const decide = (exps, expsDist, chosen, forceReturn) => {
     // si tiene una variante elegida previamente
     if (chosen) {
-      // si no existe por algún motivo se sortea de nuevo sin el choosen
+      // si no existe por algún motivo se sortea de nuevo sin el chosen
       return exps[chosen]
         ? assign({}, exps[chosen], { name: chosen })
         : decide(exps, expsDist, false, forceReturn);
@@ -56,13 +56,13 @@ const validate = (exps) => {
   if (!sumOfWeights) return process.emitWarning("Sum of weights is invalid");
 }
 
-const decider = (exps, choosen, forceReturn) => {
+const decider = (exps, chosen, forceReturn) => {
   validate(exps);
   // si tiene una variante elegida previamente
-  if (choosen) {
-    // si no existe por algún motivo se sortea de nuevo sin el choosen
-    return exps[choosen]
-      ? assign({}, exps[choosen], { name: choosen })
+  if (chosen) {
+    // si no existe por algún motivo se sortea de nuevo sin el chosen
+    return exps[chosen]
+      ? assign({}, exps[chosen], { name: chosen })
       : decider(exps, false, forceReturn);
   } else {
     const num = Math.floor(Math.random() * 100);
@@ -73,7 +73,7 @@ const decider = (exps, choosen, forceReturn) => {
       return counter > num ? true : false;
     });
 
-    return !found && forceReturn ? decider(exps, choosen, forceReturn) : found;
+    return !found && forceReturn ? decider(exps, chosen, forceReturn) : found;
   }
 };
 
