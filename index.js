@@ -5,7 +5,47 @@ const cookieParser = require("cookie-parser");
 const DEFAULT_COOKIE_NAME = "variant";
 const HASH_SPLITTER = "@"
 
-const decider = (exps, choosen, forceReturn) => {
+// preprocess experiments and returns a decider function
+const createDecider = (exps) => {
+  const experiences = typeof exps == "function" ? exps() : exps;
+
+  // an array that stores the distribution of experiences in a way it is faster to access
+  const expsDist = [];
+
+  validate(experiences);
+
+  let counter = 0;
+  each(experiences, (x, k) => {
+    for(let i = counter; i < counter + x.weight; i++) {
+      expsDist[i] = x;
+    }
+    counter = counter + x.weight;
+  });
+
+  const decide = (exps, expsDist, chosen, forceReturn) => {
+    // si tiene una variante elegida previamente
+    if (chosen) {
+      // si no existe por algún motivo se sortea de nuevo sin el choosen
+      return exps[chosen]
+        ? assign({}, exps[chosen], { name: chosen })
+        : decide(exps, expsDist, false, forceReturn);
+    } else {
+      const num = Math.floor(Math.random() * 100);
+      let found = expsDist[num];
+      return !found && forceReturn ? decide(exps, expsDist, chosen, forceReturn) : found;
+    }
+  }
+
+  return (req, res, next) => {
+    req.decide = (chosen, forceReturn) => {
+      return decide(experiences, expsDist, chosen, forceReturn);
+    }
+    next();
+  }
+}
+
+
+const validate = (exps) => {
   const sumOfWeights = reduce(exps, (p, c) => p + c.weight, 0);
   if (sumOfWeights > 100)
     process.emitWarning("Sum of weights has to be less than 100");
@@ -14,7 +54,10 @@ const decider = (exps, choosen, forceReturn) => {
       `Sum of weights is less than 100 (${sumOfWeights}). We recomend use 100 as total.`
     );
   if (!sumOfWeights) return process.emitWarning("Sum of weights is invalid");
+}
 
+const decider = (exps, choosen, forceReturn) => {
+  validate(exps);
   // si tiene una variante elegida previamente
   if (choosen) {
     // si no existe por algún motivo se sortea de nuevo sin el choosen
@@ -67,6 +110,7 @@ const resolveProxyOptions = (selectedExperiment, middlewareOptions) => {
 module.exports = decider;
 module.exports.middleware = (exps, opts = {}) => [
   cookieParser(),
+  createDecider(exps),
   (req, res, next) => {
     const {
       maxAge = 1000 * 3600 * 24 * 2,
@@ -79,7 +123,6 @@ module.exports.middleware = (exps, opts = {}) => [
       return next();
     }
 
-    const experiences = typeof exps == "function" ? exps() : exps;
     const forcedExperimentName = req.query.variant;
     
     const experimentCookie = req.cookies[cookieName];
@@ -89,7 +132,7 @@ module.exports.middleware = (exps, opts = {}) => [
     const validHash = hash == cookieHash;
     const existingExperience = !forcedExperimentName && validHash && experiences[cookieValue];
     
-    const x = existingExperience || decider(experiences, resolvedExperienceName, true);
+    const x = existingExperience || req.decide(resolvedExperienceName, true);
     const proxyOptions = resolveProxyOptions(x, opts); 
     
     if (!existingExperience) {
