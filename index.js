@@ -23,9 +23,9 @@ const createDecider = (exps) => {
   });
 
   const decide = (exps, expsDist, chosen, forceReturn) => {
-    // si tiene una variante elegida previamente
+    // if it has a previous chosen variant
     if (chosen) {
-      // si no existe por algún motivo se sortea de nuevo sin el chosen
+      // if it doesn't exists for any reason pick a random one
       return exps[chosen]
         ? assign({}, exps[chosen], { name: chosen })
         : decide(exps, expsDist, false, forceReturn);
@@ -58,9 +58,9 @@ const validate = (exps) => {
 
 const decider = (exps, chosen, forceReturn) => {
   validate(exps);
-  // si tiene una variante elegida previamente
+  // if it has a previous chosen variant
   if (chosen) {
-    // si no existe por algún motivo se sortea de nuevo sin el chosen
+    // if it doesn't exists for any reason pick a random one
     return exps[chosen]
       ? assign({}, exps[chosen], { name: chosen })
       : decider(exps, false, forceReturn);
