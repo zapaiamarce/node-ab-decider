@@ -15,6 +15,9 @@ const createDecider = (exps) => {
   validate(experiences);
 
   let counter = 0;
+  // inject the name of the experience on the experience object since later it will be used 
+  // for cookie generation, etc.
+  each(experiences, (x, k) => (x.name = k));
   each(experiences, (x, k) => {
     for(let i = counter; i < counter + x.weight; i++) {
       expsDist[i] = x;
