@@ -1,5 +1,5 @@
 import test from "ava";
-import decider from ".";
+import decider, {prepare} from ".";
 import { times, countBy, mapValues } from "lodash";
 import server from "./server"
 import cookie from "cookie"
@@ -72,3 +72,13 @@ test("decider server balance weight correctly", async t => {
   t.log(percentages)
   t.truthy(true)
 });
+
+test("prepare add name to exps", async t => {
+  const prepared = prepare({
+    a:{
+      weight: 10
+    }
+  })
+  
+  t.is(prepared.a.name, "a")
+})

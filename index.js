@@ -1,5 +1,5 @@
 const proxy = require("express-http-proxy");
-const { reduce, find, assign, each, random } = require("lodash");
+const { reduce, find, assign, each, map } = require("lodash");
 const cookieParser = require("cookie-parser");
 
 const DEFAULT_COOKIE_NAME = "variant";
@@ -8,10 +8,11 @@ const HASH_SPLITTER = "@";
 // preprocess experiments and returns a decider function
 const createMemoDecider = exps => {
   validate(exps);
+  prepare(exps);
 
   // if it has a previous chosen variant
   const cache = [];
-  
+
   let counter = 0;
   each(exps, (x, k) => {
     // inject the name of the experience on the experience object since later it will be used
@@ -27,15 +28,14 @@ const createMemoDecider = exps => {
 
 const decider = (exps, chosen, forceReturn, cache) => {
   validate(exps);
+  prepare(exps);
+
   if (chosen) {
     // if it doesn't exists for any reason pick a random one
-    return exps[chosen]
-      ? assign({}, exps[chosen], { name: chosen })
-      : decider(exps, false, forceReturn);
+    return exps[chosen] ? exps[chosen] : decider(exps, false, forceReturn);
   } else {
     const num = Math.floor(Math.random() * 100);
-    each(exps, (x, k) => (x.name = k));
-    
+
     const cachedExp = cache && cache[num];
     if (cachedExp) {
       return cachedExp;
@@ -52,16 +52,16 @@ const decider = (exps, chosen, forceReturn, cache) => {
     }
   }
 };
+
+const prepare = exps => {
+  each(exps, (x, k) => (x.name = k));
+  return exps;
+};
+
 const validate = exps => {
   const sumOfWeights = reduce(exps, (p, c) => p + c.weight, 0);
-  if (sumOfWeights > 100)
-    if (sumOfWeights < 100)
-      // process.emitWarning("Sum of weights has to be less than 100");
-      if (!sumOfWeights)
-        // process.emitWarning(
-        //   `Sum of weights is less than 100 (${sumOfWeights}). We recomend use 100 as total.`
-        // );
-        return process.emitWarning("Sum of weights is invalid");
+  if (sumOfWeights > 100 || sumOfWeights < 100 || !sumOfWeights)
+    return process.emitWarning("Sum of weights is invalid");
 };
 
 const resolveProxyOptions = (selectedExperiment, middlewareOptions) => {
@@ -114,12 +114,15 @@ module.exports.middleware = (exps, opts = {}) => {
       const forcedExperimentName = req.query.variant;
 
       const experimentCookie = req.cookies[cookieName];
-      const cookieValue = experimentCookie && experimentCookie.split(HASH_SPLITTER)[0];
-      const cookieHash = experimentCookie && experimentCookie.split(HASH_SPLITTER)[1];
+      const cookieValue =
+        experimentCookie && experimentCookie.split(HASH_SPLITTER)[0];
+      const cookieHash =
+        experimentCookie && experimentCookie.split(HASH_SPLITTER)[1];
       const validHash = hash == cookieHash;
 
       const resolvedExperienceName = forcedExperimentName || cookieValue;
-      const existingExperience = experiences[resolvedExperienceName] && validHash;
+      const existingExperience =
+        experiences[resolvedExperienceName] && validHash;
 
       const x = memoDecider(resolvedExperienceName, true);
       const proxyOptions = resolveProxyOptions(x, opts);
@@ -132,3 +135,5 @@ module.exports.middleware = (exps, opts = {}) => {
     }
   ];
 };
+
+module.exports.prepare = prepare;
